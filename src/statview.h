@@ -395,13 +395,50 @@ INT_PTR CALLBACK Stats(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
                     if (sec) {
                         int ih = y - graphrect.top - ypos * graphh;
                         if (ih >= 0 && ih < graphh) {
+                            // Found the day, now find which tag segment
                             daydata d;
                             d.nday = i + starttime;
                             SYSTEMTIME st;
                             d.createsystime(st);
-                            d.seconds = sec;
+                            // Calculate which tag segment based on X position
+                            DWORD biggesttotal = 0;
+                            loopv(k, daystats) if (daystats[k].total > biggesttotal) {
+                                biggesttotal = daystats[k].total;
+                            }
+                            int barw = graphrect.right - graphrect.left;
+                            int bstart = graphrect.left;
+                            int foundtag = -1;
+                            DWORD tagsec = 0;
+                            loop(j, MAXTAGS) {
+                                int sz = daystats[i].seconds[j] * barw / biggesttotal;
+                                if (sz) {
+                                    if (x >= bstart && x < bstart + sz) {
+                                        foundtag = j;
+                                        tagsec = daystats[i].seconds[j];
+                                        break;
+                                    }
+                                    bstart += sz;
+                                }
+                            }
                             String s;
                             s.Format("%d-%d-%d -> ", st.wYear, st.wMonth, st.wDay);
+                            if (foundtag >= 0) {
+                                // Show specific tag info
+                                s.Cat(" | ");
+                                s.Cat(tags[foundtag].name);
+                                s.Cat(": ");
+                                daydata td;
+                                td.seconds = tagsec;
+                                String ts;
+                                td.format(ts, 0);
+                                s.Cat(ts);
+                                int pct = (tagsec * 100) / sec;
+                                String ps;
+                                ps.Format(" (%d%%)", pct);
+                                s.Cat(ps);
+                            }
+                            s.Cat(" | Total: ");
+                            d.seconds = sec;
                             d.format(s, 0);
                             SetWindowTextA(sho, s);
                             isongraph = true;

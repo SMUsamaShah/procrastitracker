@@ -400,15 +400,18 @@ INT_PTR CALLBACK Stats(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
                             d.nday = i + starttime;
                             SYSTEMTIME st;
                             d.createsystime(st);
-                            // Calculate which tag segment based on X position
+                            
+                            // Calculate biggesttotal for scaling
                             DWORD biggesttotal = 0;
-                            loopv(k, daystats) if (daystats[k].total > biggesttotal) {
+                            loopv(k, daystats) if (daystats[k].total > biggesttotal) 
                                 biggesttotal = daystats[k].total;
-                            }
+                            
+                            // Find which tag segment we're hovering over
                             int barw = graphrect.right - graphrect.left;
                             int bstart = graphrect.left;
                             int foundtag = -1;
                             DWORD tagsec = 0;
+                            
                             loop(j, MAXTAGS) {
                                 int sz = daystats[i].seconds[j] * barw / biggesttotal;
                                 if (sz) {
@@ -420,27 +423,35 @@ INT_PTR CALLBACK Stats(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
                                     bstart += sz;
                                 }
                             }
+                            
+                            // Build the tooltip string
                             String s;
-                            s.Format("%d-%d-%d -> ", st.wYear, st.wMonth, st.wDay);
-                            if (foundtag >= 0) {
+                            s.Format("%d-%d-%d ->", st.wYear, st.wMonth, st.wDay);
+                            
+                            if (foundtag >= 0 && tagsec > 0) {
                                 // Show specific tag info
                                 s.Cat(" | ");
                                 s.Cat(tags[foundtag].name);
                                 s.Cat(": ");
+                                
+                                // Format tag time
                                 daydata td;
                                 td.seconds = tagsec;
-                                String ts;
-                                td.format(ts, 0);
-                                s.Cat(ts);
+                                td.format(s, 0);  // Append directly to s
+                                
+                                // Show percentage
                                 int pct = (tagsec * 100) / sec;
-                                String ps;
-                                ps.Format(" (%d%%)", pct);
-                                s.Cat(ps);
+                                char pctbuf[20];
+                                sprintf_s(pctbuf, 20, " (%d%%)", pct);
+                                s.Cat(pctbuf);
                             }
+                            
+                            // Always show total
                             s.Cat(" | Total: ");
                             d.seconds = sec;
-                            d.format(s, 0);
-                            SetWindowTextA(sho, s);
+                            d.format(s, 0);  // Append directly to s
+                            
+                            SetWindowTextA(sho, s.c_str());
                             isongraph = true;
                             break;
                         }

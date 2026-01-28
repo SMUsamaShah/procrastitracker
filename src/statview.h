@@ -424,34 +424,58 @@ INT_PTR CALLBACK Stats(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
                                 }
                             }
                             
-                            // Build the tooltip string
-                            String s;
-                            s.Format("%d-%d-%d ->", st.wYear, st.wMonth, st.wDay);
+                            // Build the tooltip string manually to avoid String class issues
+                            char tooltip[500];
+                            int pos = 0;
+                            
+                            // Add date
+                            pos += sprintf_s(tooltip + pos, sizeof(tooltip) - pos, 
+                                            "%d-%d-%d", st.wYear, st.wMonth, st.wDay);
                             
                             if (foundtag >= 0 && tagsec > 0) {
-                                // Show specific tag info
-                                s.Cat(" | ");
-                                s.Cat(tags[foundtag].name);
-                                s.Cat(": ");
+                                // Add tag name
+                                pos += sprintf_s(tooltip + pos, sizeof(tooltip) - pos, 
+                                                " | %s: ", tags[foundtag].name);
                                 
-                                // Format tag time
-                                daydata td;
-                                td.seconds = tagsec;
-                                td.format(s, 0);  // Append directly to s
+                                // Format tag time manually
+                                int tsecs = tagsec;
+                                int tmins = tsecs / 60;
+                                tsecs -= tmins * 60;
+                                int thrs = tmins / 60;
+                                tmins -= thrs * 60;
                                 
-                                // Show percentage
+                                if (thrs > 0) {
+                                    pos += sprintf_s(tooltip + pos, sizeof(tooltip) - pos, 
+                                                    "%d:%02d:%02d", thrs, tmins, tsecs);
+                                } else {
+                                    pos += sprintf_s(tooltip + pos, sizeof(tooltip) - pos, 
+                                                    "%02d:%02d", tmins, tsecs);
+                                }
+                                
+                                // Add percentage
                                 int pct = (tagsec * 100) / sec;
-                                char pctbuf[20];
-                                sprintf_s(pctbuf, 20, " (%d%%)", pct);
-                                s.Cat(pctbuf);
+                                pos += sprintf_s(tooltip + pos, sizeof(tooltip) - pos, 
+                                                " (%d%%)", pct);
                             }
                             
-                            // Always show total
-                            s.Cat(" | Total: ");
-                            d.seconds = sec;
-                            d.format(s, 0);  // Append directly to s
+                            // Add total time
+                            pos += sprintf_s(tooltip + pos, sizeof(tooltip) - pos, " | Total: ");
                             
-                            SetWindowTextA(sho, s.c_str());
+                            int tsecs = sec;
+                            int tmins = tsecs / 60;
+                            tsecs -= tmins * 60;
+                            int thrs = tmins / 60;
+                            tmins -= thrs * 60;
+                            
+                            if (thrs > 0) {
+                                sprintf_s(tooltip + pos, sizeof(tooltip) - pos, 
+                                         "%d:%02d:%02d", thrs, tmins, tsecs);
+                            } else {
+                                sprintf_s(tooltip + pos, sizeof(tooltip) - pos, 
+                                         "%02d:%02d", tmins, tsecs);
+                            }
+                            
+                            SetWindowTextA(sho, tooltip);
                             isongraph = true;
                             break;
                         }
